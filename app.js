@@ -5,20 +5,18 @@ var cookieParser = require("cookie-parser");
 var logger = require("morgan");
 const mongoose = require("mongoose");
 const session = require("express-session");
-const passport = require("passport");
-const passport_local = require("passport-local");
-
+const passport = require("./config/passport");
 const connectMongo = require("connect-mongo");
 const MongoDBStore = connectMongo(session);
-
+const bcypt = require("bcrypt");
 /*
 The equivalent of above would be:
 const MongoDBStore = require("connect-mongo")(session);
 */
 
-var user = require("./models/User");
-var post = require("./models/Post");
-var comment = require("./models/Comment");
+var User = require("./models/User");
+var Post = require("./models/Post");
+var Comment = require("./models/Comment");
 
 const HOST = process.env.HOST || "localhost";
 const PORT = process.env.PORT || 27017;
@@ -69,14 +67,26 @@ app.use(
   })
 );
 
+
 /*
 passport.js stuff goes here
+The below passport is configured in the ./config/passport.js
 */
-// app.use(passport.initialize());
-// app.use(passport.session());
+passport.authenticate('local');
+
+app.use(passport.initialize());
+app.use(passport.session());
 
 app.use("/", indexRouter);
-app.use("/users", usersRouter);
+/*can use "if (req.isAuthenticated())" instead of "if (req.user)" */
+app.use("/users", function (req, res, next) {
+  console.log(req.isAuthenticated())
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  res.redirect("/auth/login")
+
+}, usersRouter);
 app.use("/auth", authRouter);
 app.use("/signup", signupRouter);
 
